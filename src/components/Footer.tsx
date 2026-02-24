@@ -39,13 +39,17 @@ const Footer = () => {
           <div>
             <h3 className="font-display font-semibold text-foreground mb-4">Contact</h3>
             <div className="space-y-3">
-              <a href="tel:+923001234567" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-body">
+              <a href="tel:03269946142" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-body">
                 <Phone className="w-4 h-4 text-primary" />
-                +92 300 1234567
+                0326 9946142
               </a>
-              <a href="mailto:info@howdy.pk" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-body">
+              <a href="tel:03257217221" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-body">
+                <Phone className="w-4 h-4 text-primary" />
+                0325 7217221
+              </a>
+              <a href="https://instagram.com/jushhpk" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-body">
                 <Mail className="w-4 h-4 text-primary" />
-                info@howdy.pk
+                @Jushhpk
               </a>
               <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
                 <Clock className="w-4 h-4 text-primary" />
@@ -60,11 +64,11 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-start gap-2 text-sm text-muted-foreground font-body">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>Main Boulevard, Johar Town, Lahore</span>
+                <span>R-2 Johar Town, Near Shaukat Khanum, Lahore</span>
               </div>
               <div className="flex items-start gap-2 text-sm text-muted-foreground font-body">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <span>MM Alam Road, DHA Phase 5, Lahore</span>
+                <span>100-H, DHA, Phase 01, Lahore</span>
               </div>
             </div>
           </div>
