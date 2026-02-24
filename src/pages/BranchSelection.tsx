@@ -15,12 +15,12 @@ const BranchSelection = () => {
   const branches = [
     {
       name: "Johar Town",
-      address: "Main Boulevard, Johar Town, Lahore",
+      address: "R-2 Johar Town, Near Shaukat Khanum, Lahore",
       timing: "12 PM – 2 AM",
     },
     {
       name: "DHA",
-      address: "MM Alam Road, DHA Phase 5, Lahore",
+      address: "100-H, DHA, Phase 01, Lahore",
       timing: "12 PM – 2 AM",
     },
   ];

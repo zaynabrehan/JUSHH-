@@ -16,8 +16,9 @@ const Contact = () => {
           <h2 className="text-2xl font-display font-bold text-foreground">Get in Touch</h2>
           <div className="space-y-4">
             {[
-              { icon: Phone, label: "Phone", value: "+92 300 1234567", href: "tel:+923001234567" },
-              { icon: Mail, label: "Email", value: "info@howdy.pk", href: "mailto:info@howdy.pk" },
+              { icon: Phone, label: "Phone", value: "0326 9946142", href: "tel:03269946142" },
+              { icon: Phone, label: "Phone 2", value: "0325 7217221", href: "tel:03257217221" },
+              { icon: Mail, label: "Instagram", value: "@Jushhpk", href: "https://instagram.com/jushhpk" },
               { icon: Clock, label: "Hours", value: "12:00 PM – 2:00 AM Daily" },
             ].map(({ icon: Icon, label, value, href }) => (
               <div key={label} className="flex items-center gap-4 bg-card border border-border rounded-xl p-4">
@@ -42,8 +43,8 @@ const Contact = () => {
           <div className="space-y-3 pt-2">
             <h3 className="font-display font-semibold text-foreground">Our Branches</h3>
             {[
-              { name: "Johar Town", address: "Main Boulevard, Johar Town, Lahore" },
-              { name: "DHA", address: "MM Alam Road, DHA Phase 5, Lahore" },
+              { name: "Johar Town", address: "R-2 Johar Town, Near Shaukat Khanum, Lahore" },
+              { name: "DHA", address: "100-H, DHA, Phase 01, Lahore" },
             ].map((b) => (
               <div key={b.name} className="flex items-start gap-3 bg-card border border-border rounded-xl p-4">
                 <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />

@@ -31,9 +31,9 @@ const Navbar = () => {
             Open Daily: 12 PM – 2 AM
           </span>
           <div className="flex items-center gap-4">
-            <a href="tel:+923001234567" className="flex items-center gap-1 text-primary hover:text-gold-light transition-colors">
+            <a href="tel:03269946142" className="flex items-center gap-1 text-primary hover:text-gold-light transition-colors">
               <Phone className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">+92 300 1234567</span>
+              <span className="hidden sm:inline">0326 9946142</span>
             </a>
             <button className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
               <User className="w-3.5 h-3.5" />
