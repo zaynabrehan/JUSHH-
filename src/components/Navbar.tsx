@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Heart, ShoppingCart, Phone, User, Menu, X, MapPin } from "lucide-react";
+import { Search, Heart, ShoppingCart, Phone, User, Menu, X, MapPin, Clock } from "lucide-react";
 import { useStore } from "@/context/StoreContext";
 import { motion, AnimatePresence } from "framer-motion";
 import CartPanel from "./CartPanel";
