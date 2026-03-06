@@ -5,6 +5,7 @@ import { useStore } from "@/context/StoreContext";
 import { motion, AnimatePresence } from "framer-motion";
 import CartPanel from "./CartPanel";
 import JushhLogo from "./JushhLogo";
+import jushhLogo from "@/assets/jushh-logo.png";
 
 const Navbar = () => {
   const { cartCount, branch } = useStore();
