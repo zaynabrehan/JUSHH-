@@ -3,6 +3,7 @@ import { useStore } from "@/context/StoreContext";
 import { MapPin, Clock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import restaurantInterior from "@/assets/restaurant-interior.jpg";
+import JushhLogo from "@/components/JushhLogo";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -53,9 +54,9 @@ const BranchSelection = () => {
         animate="visible"
         className="relative z-10 text-center px-4 max-w-2xl mx-auto"
       >
-        <motion.h1 variants={fadeUp} custom={0} className="text-5xl md:text-7xl font-display font-bold text-gradient-fire mb-3 tracking-wider">
-          JUSHHPK
-        </motion.h1>
+        <motion.div variants={fadeUp} custom={0} className="mb-2">
+          <JushhLogo size="xl" showTagline />
+        </motion.div>
         <motion.p variants={fadeUp} custom={1} className="text-lg text-muted-foreground font-body mb-2">
           Premium Pakistani & Turkish Cuisine
         </motion.p>
