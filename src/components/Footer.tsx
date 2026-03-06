@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Clock, MapPin } from "lucide-react";
+import JushhLogo from "./JushhLogo";
 
 const Footer = () => {
   return (
@@ -8,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h2 className="text-2xl font-display font-bold text-gradient-fire mb-4">JUSHHPK</h2>
+            <JushhLogo size="md" showTagline />
             <p className="text-sm text-muted-foreground font-body leading-relaxed">
               Experience the finest Pakistani & Turkish cuisine with bold flavors and warm hospitality.
             </p>

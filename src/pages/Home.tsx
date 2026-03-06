@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Flame, Star, Clock, Truck, Award, Quote } from "lucide-react";
+import { ArrowRight, Flame, Star, Clock, Truck, Award, Quote, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import FoodCard from "@/components/FoodCard";
 import { menuItems } from "@/data/menu";
-import heroBanner from "@/assets/hero-banner.jpg";
+import heroFoodSpread from "@/assets/hero-food-spread.jpg";
 import restaurantInterior from "@/assets/restaurant-interior.jpg";
 
 const fadeUp = {
@@ -14,6 +14,13 @@ const fadeUp = {
     transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
   }),
 };
+
+const ImagePlaceholder = ({ label, className = "" }: { label: string; className?: string }) => (
+  <div className={`bg-secondary/50 border border-border rounded-2xl flex flex-col items-center justify-center gap-3 ${className}`}>
+    <ImageIcon className="w-10 h-10 text-muted-foreground/40" />
+    <span className="text-xs text-muted-foreground/60 font-body">{label}</span>
+  </div>
+);
 
 const Home = () => {
   const popular = menuItems.slice(0, 4);
@@ -36,56 +43,67 @@ const Home = () => {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative h-[85vh] min-h-[600px] overflow-hidden">
-        <img
-          src={heroBanner}
-          alt="Jushhpk Restaurant signature dishes"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-
+      <section className="relative min-h-[600px] overflow-hidden py-16 md:py-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
         {/* Floating blobs */}
         <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl animate-float" />
         <div className="absolute bottom-32 right-40 w-48 h-48 rounded-full bg-accent/10 blur-3xl animate-float" style={{ animationDelay: "2s" }} />
         <div className="absolute top-40 left-1/2 w-60 h-60 rounded-full bg-orange-light/5 blur-3xl animate-pulse-glow" />
 
         <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            className="max-w-xl"
-          >
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6">
-              <Flame className="w-4 h-4 text-primary" />
-              <span className="text-sm font-body text-foreground">Premium Pakistani & Turkish Cuisine</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center w-full">
+            {/* Left: Text */}
+            <motion.div initial="hidden" animate="visible" className="max-w-xl">
+              <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full mb-6">
+                <Flame className="w-4 h-4 text-primary" />
+                <span className="text-sm font-body text-foreground">Premium Pakistani & Turkish Cuisine</span>
+              </motion.div>
+
+              <motion.h1 variants={fadeUp} custom={1} className="text-5xl md:text-7xl font-display font-bold text-foreground leading-tight mb-6">
+                Taste the{" "}
+                <span className="text-gradient-fire">Authentic</span>{" "}
+                Flavors
+              </motion.h1>
+
+              <motion.p variants={fadeUp} custom={2} className="text-muted-foreground font-body text-lg mb-10 leading-relaxed max-w-md">
+                From sizzling kebabs to aromatic biryanis — experience the finest cuisine crafted with love and tradition.
+              </motion.p>
+
+              <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4">
+                <Link
+                  to="/menu"
+                  className="inline-flex items-center gap-2 bg-gradient-fire text-primary-foreground px-8 py-4 rounded-xl font-bold font-body hover:shadow-fire hover:scale-105 transition-all text-lg"
+                >
+                  Order Now <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  to="/menu"
+                  className="inline-flex items-center gap-2 glass text-foreground px-8 py-4 rounded-xl font-bold font-body hover:bg-secondary transition-all text-lg"
+                >
+                  View Menu
+                </Link>
+              </motion.div>
             </motion.div>
 
-            <motion.h1 variants={fadeUp} custom={1} className="text-5xl md:text-7xl font-display font-bold text-foreground leading-tight mb-6">
-              Taste the{" "}
-              <span className="text-gradient-fire">Authentic</span>{" "}
-              Flavors
-            </motion.h1>
-
-            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground font-body text-lg mb-10 leading-relaxed max-w-md">
-              From sizzling kebabs to aromatic biryanis — experience the finest cuisine crafted with love and tradition.
-            </motion.p>
-
-            <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4">
-              <Link
-                to="/menu"
-                className="inline-flex items-center gap-2 bg-gradient-fire text-primary-foreground px-8 py-4 rounded-xl font-bold font-body hover:shadow-fire hover:scale-105 transition-all text-lg"
-              >
-                Order Now <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                to="/menu"
-                className="inline-flex items-center gap-2 glass text-foreground px-8 py-4 rounded-xl font-bold font-body hover:bg-secondary transition-all text-lg"
-              >
-                View Menu
-              </Link>
+            {/* Right: Hero Image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, x: 40 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative rounded-3xl overflow-hidden shadow-card">
+                <img
+                  src={heroFoodSpread}
+                  alt="Jushh signature food spread"
+                  className="w-full h-[480px] object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+              </div>
+              <div className="absolute -bottom-6 -left-6 w-40 h-40 rounded-full bg-gradient-fire opacity-20 blur-3xl" />
+              <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-accent/20 blur-2xl" />
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -98,7 +116,7 @@ const Home = () => {
           className="text-center mb-14"
         >
           <motion.h2 variants={fadeUp} custom={0} className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
-            Why Choose <span className="text-gradient-fire">Jushhpk</span>
+            Why Choose <span className="text-gradient-fire">Jushh</span>
           </motion.h2>
           <motion.p variants={fadeUp} custom={1} className="text-muted-foreground font-body max-w-lg mx-auto">
             We don't just serve food — we deliver an experience
@@ -116,11 +134,17 @@ const Home = () => {
               custom={i}
               className="glass-card rounded-2xl p-6 hover-lift group cursor-default"
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-fire flex items-center justify-center mb-4 group-hover:shadow-fire transition-shadow">
-                <f.icon className="w-6 h-6 text-primary-foreground" />
+              <div className="flex items-start gap-4">
+                {/* Image placeholder */}
+                <ImagePlaceholder label="Feature" className="w-20 h-20 flex-shrink-0" />
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-fire flex items-center justify-center mb-3 group-hover:shadow-fire transition-shadow">
+                    <f.icon className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-display font-bold text-foreground text-lg mb-1">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground font-body">{f.desc}</p>
+                </div>
               </div>
-              <h3 className="font-display font-bold text-foreground text-lg mb-2">{f.title}</h3>
-              <p className="text-sm text-muted-foreground font-body">{f.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -178,7 +202,7 @@ const Home = () => {
             <div className="rounded-2xl overflow-hidden shadow-card">
               <img
                 src={restaurantInterior}
-                alt="Jushhpk Restaurant interior"
+                alt="Jushh Restaurant interior"
                 className="w-full h-96 object-cover"
               />
             </div>
@@ -194,7 +218,7 @@ const Home = () => {
               A Legacy of <span className="text-gradient-fire">Flavor</span>
             </motion.h2>
             <motion.p variants={fadeUp} custom={1} className="text-muted-foreground font-body leading-relaxed">
-              Born in the heart of Lahore, Jushhpk brings together rich culinary traditions with a modern dining experience. Every dish tells a story — of spices ground fresh, recipes passed down generations.
+              Born in the heart of Lahore, Jushh brings together rich culinary traditions with a modern dining experience. Every dish tells a story — of spices ground fresh, recipes passed down generations.
             </motion.p>
             <motion.p variants={fadeUp} custom={2} className="text-muted-foreground font-body leading-relaxed">
               Our chefs use only the finest ingredients, sourced locally and prepared with meticulous attention to detail.
