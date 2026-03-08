@@ -1,19 +1,21 @@
-// src/App.tsx
-import CartPanel from "@/components/CartPanel"; // ✅ import CartPanel
+import CartPanel from "@/components/CartPanel";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/context/StoreContext";
+import { AuthProvider } from "@/hooks/useAuth";
 import About from "@/pages/About";
+import Admin from "@/pages/Admin";
 import BranchSelection from "@/pages/BranchSelection";
 import Checkout from "@/pages/checkout";
 import Contact from "@/pages/Contact";
 import Favorites from "@/pages/Favorites";
 import Home from "@/pages/Home";
 import MenuPage from "@/pages/MenuPage";
-import SignIn from "@/pages/signin"; // ✅ import SignIn page
+import Orders from "@/pages/Orders";
+import SignIn from "@/pages/signin";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import NotFound from "./pages/NotFound";
@@ -36,14 +38,13 @@ const AppLayout = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/signin" element={<SignIn />} /> {/* ✅ SignIn Route */}
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-
       {!isBranchPage && <Footer />}
-
-      {/* ✅ Mount CartPanel globally so cart works on all pages */}
       <CartPanel />
     </>
   );
@@ -52,13 +53,15 @@ const AppLayout = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <StoreProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppLayout />
-        </BrowserRouter>
-      </StoreProvider>
+      <AuthProvider>
+        <StoreProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppLayout />
+          </BrowserRouter>
+        </StoreProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
