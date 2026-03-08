@@ -2,43 +2,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { CheckCircle, ChefHat, Clock, MapPin, Package, Phone, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+const LazyOrderMap = lazy(() => import("@/components/OrderMap"));
 
 // Branch coordinates
 const BRANCH_COORDS: Record<string, [number, number]> = {
   "Johar Town": [31.4697, 74.2728],
   "DHA Phase 1": [31.4784, 74.3753],
 };
-
-// Fix for default marker icons in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-const riderIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448360.png",
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-});
-
-const restaurantIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448609.png",
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-});
-
-const homeIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/609/609803.png",
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-});
 
 interface Order {
   id: string;
@@ -66,7 +40,6 @@ const STATUS_STEPS = [
   { key: "delivered", label: "Delivered", icon: MapPin, description: "Order delivered successfully!" },
 ];
 
-// Simulated rider position based on status
 const getRiderProgress = (status: string): number => {
   const progressMap: Record<string, number> = {
     pending: 0,
@@ -76,24 +49,6 @@ const getRiderProgress = (status: string): number => {
     delivered: 1,
   };
   return progressMap[status] ?? 0;
-};
-
-const AnimatedRider = ({ start, end, progress }: { start: [number, number]; end: [number, number]; progress: number }) => {
-  const map = useMap();
-  const [position, setPosition] = useState(start);
-
-  useEffect(() => {
-    const lat = start[0] + (end[0] - start[0]) * progress;
-    const lng = start[1] + (end[1] - start[1]) * progress;
-    setPosition([lat, lng]);
-    if (progress > 0) {
-      map.flyTo([lat, lng], 14, { duration: 1 });
-    }
-  }, [progress, start, end, map]);
-
-  if (progress === 0) return null;
-
-  return <Marker position={position} icon={riderIcon} />;
 };
 
 const OrderTracking = () => {
@@ -116,7 +71,6 @@ const OrderTracking = () => {
 
       if (orderData) {
         setOrder(orderData);
-        // Fetch order items
         const { data: itemsData } = await supabase
           .from("order_items")
           .select("*, menu_items(name, image_url)")
@@ -128,7 +82,6 @@ const OrderTracking = () => {
 
     fetchOrder();
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel(`order-${orderId}`)
       .on(
@@ -184,7 +137,6 @@ const OrderTracking = () => {
 
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === order.status);
   const branchCoords = BRANCH_COORDS[order.branch] || BRANCH_COORDS["Johar Town"];
-  // Simulate delivery location (slightly offset from branch for demo)
   const deliveryCoords: [number, number] = [branchCoords[0] + 0.015, branchCoords[1] + 0.02];
   const riderProgress = getRiderProgress(order.status);
   const estimatedTime = order.estimated_delivery
@@ -216,24 +168,9 @@ const OrderTracking = () => {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl overflow-hidden shadow-card mb-6 border border-border"
       >
-        <MapContainer
-          center={branchCoords}
-          zoom={13}
-          style={{ height: "300px", width: "100%" }}
-          zoomControl={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <Marker position={branchCoords} icon={restaurantIcon} />
-          <Marker position={deliveryCoords} icon={homeIcon} />
-          <Polyline
-            positions={[branchCoords, deliveryCoords]}
-            pathOptions={{ color: "#f97316", weight: 4, dashArray: "10, 10" }}
-          />
-          <AnimatedRider start={branchCoords} end={deliveryCoords} progress={riderProgress} />
-        </MapContainer>
+        <Suspense fallback={<div style={{ height: 300 }} className="bg-muted animate-pulse" />}>
+          <LazyOrderMap branchCoords={branchCoords} deliveryCoords={deliveryCoords} riderProgress={riderProgress} />
+        </Suspense>
       </motion.div>
 
       {/* Status Steps */}
@@ -252,7 +189,6 @@ const OrderTracking = () => {
 
             return (
               <div key={step.key} className="flex items-start gap-4 relative">
-                {/* Line */}
                 {index < STATUS_STEPS.length - 1 && (
                   <div
                     className={`absolute left-5 top-10 w-0.5 h-12 ${
@@ -260,7 +196,6 @@ const OrderTracking = () => {
                     }`}
                   />
                 )}
-                {/* Icon */}
                 <motion.div
                   initial={{ scale: 0.8 }}
                   animate={{ scale: isCurrent ? 1.1 : 1 }}
@@ -272,7 +207,6 @@ const OrderTracking = () => {
                 >
                   <Icon className="w-5 h-5" />
                 </motion.div>
-                {/* Text */}
                 <div className="pb-8">
                   <p className={`font-bold font-body ${isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
                     {step.label}
@@ -340,7 +274,6 @@ const OrderTracking = () => {
           </div>
         </div>
 
-        {/* Contact Support */}
         <div className="mt-6 pt-4 border-t border-border">
           <a
             href="tel:03245531819"
