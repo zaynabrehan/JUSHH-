@@ -15,6 +15,7 @@ import Favorites from "@/pages/Favorites";
 import Home from "@/pages/Home";
 import MenuPage from "@/pages/MenuPage";
 import Orders from "@/pages/Orders";
+import OrderTracking from "@/pages/OrderTracking";
 import SignIn from "@/pages/signin";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
