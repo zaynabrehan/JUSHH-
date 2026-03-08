@@ -115,8 +115,16 @@ const OrderTracking = () => {
     ? new Date(order.estimated_delivery).toLocaleTimeString("en-PK", { hour: "2-digit", minute: "2-digit" })
     : "30-45 mins";
 
-  // Static map using OpenStreetMap tile
-  const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${branchCoords[0]},${branchCoords[1]}&zoom=13&size=800x300&maptype=mapnik&markers=${branchCoords[0]},${branchCoords[1]},red-pushpin`;
+  const latDelta = 0.02;
+  const lngDelta = 0.03;
+  const bbox = [
+    branchCoords[1] - lngDelta,
+    branchCoords[0] - latDelta,
+    branchCoords[1] + lngDelta,
+    branchCoords[0] + latDelta,
+  ].join(",");
+  const embedMapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${branchCoords[0]},${branchCoords[1]}`;
+  const openMapUrl = `https://www.openstreetmap.org/?mlat=${branchCoords[0]}&mlon=${branchCoords[1]}#map=14/${branchCoords[0]}/${branchCoords[1]}`;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
