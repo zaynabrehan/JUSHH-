@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Checkout = () => {
-  const { cart, updateQuantity, removeFromCart, cartTotal, clearCart, branch } = useStore();
+  const { cart, updateQuantity, removeFromCart, cartTotal, clearCart, branch, setBranch } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notes, setNotes] = useState("");
