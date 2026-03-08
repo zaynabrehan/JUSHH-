@@ -2,11 +2,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { CheckCircle, ChefHat, Clock, MapPin, Package, Phone, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
-import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+const LazyMap = lazy(() => import("@/components/OrderMap"));
 
 // Branch coordinates
 const BRANCH_COORDS: Record<string, [number, number]> = {
