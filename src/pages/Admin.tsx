@@ -248,7 +248,14 @@ const Admin = () => {
                   <input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Description" className={inputClass} maxLength={300} />
                   <input value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="Price (e.g. 750)" type="number" className={inputClass} />
                   <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Category" className={inputClass} maxLength={50} />
-                  <input value={formImage} onChange={(e) => setFormImage(e.target.value)} placeholder="Image URL (optional)" className={inputClass} />
+                  <div className="flex items-center gap-3">
+                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFormImageUpload} />
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-secondary text-muted-foreground font-body hover:border-primary hover:text-foreground transition-all disabled:opacity-50">
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {uploading ? "Uploading..." : "Upload Image"}
+                    </button>
+                    {formImage && <img src={formImage} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />}
+                  </div>
                   <button onClick={addMenuItem} disabled={saving} className="bg-gradient-fire text-primary-foreground px-6 py-2.5 rounded-xl font-bold font-body disabled:opacity-50 flex items-center gap-2">
                     {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
                   </button>
