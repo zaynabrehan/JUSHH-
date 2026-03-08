@@ -5,6 +5,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Heart, LogOut, MapPin, Menu, Phone, Shield, ShoppingCart, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import CartPanel from "./CartPanel";
 import JushhLogo from "./JushhLogo";
 
@@ -13,6 +24,7 @@ const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -36,7 +48,9 @@ const Navbar = () => {
   if (!branch && location.pathname === "/") return null;
 
   const handleSignOut = async () => {
+    setShowLogoutDialog(false);
     await signOut();
+    toast.success("You have been logged out successfully!");
     navigate("/home");
   };
 
@@ -113,7 +127,7 @@ const Navbar = () => {
                     <Shield className="w-5 h-5" />
                   </Link>
                 )}
-                <button onClick={handleSignOut} className="p-2 text-muted-foreground hover:text-destructive transition-colors" title="Sign out">
+                <button onClick={() => setShowLogoutDialog(true)} className="p-2 text-muted-foreground hover:text-destructive transition-colors" title="Sign out">
                   <LogOut className="w-5 h-5" />
                 </button>
               </div>
@@ -145,7 +159,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 {user && (
-                  <button onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }} className="block py-2 text-sm font-medium text-destructive">
+                  <button onClick={() => { setShowLogoutDialog(true); setIsMobileMenuOpen(false); }} className="block py-2 text-sm font-medium text-destructive">
                     Sign Out
                   </button>
                 )}
@@ -156,6 +170,23 @@ const Navbar = () => {
       </nav>
 
       <CartPanel />
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Do you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign in again to place orders.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
