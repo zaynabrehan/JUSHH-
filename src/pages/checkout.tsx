@@ -88,7 +88,7 @@ const Checkout = () => {
       window.open(whatsappUrl, "_blank");
 
       clearCart();
-      navigate("/orders");
+      navigate(`/orders/${order.id}`);
     }
     setPlacing(false);
   };
