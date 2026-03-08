@@ -12,6 +12,7 @@ const Checkout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notes, setNotes] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [placing, setPlacing] = useState(false);
 
   if (!user) {
