@@ -262,10 +262,27 @@ const Admin = () => {
                 </div>
               )}
 
+              <input type="file" ref={editFileInputRef} accept="image/*" className="hidden" onChange={(e) => editingImageId && handleEditImageUpload(e, editingImageId)} />
               <div className="space-y-3">
                 {menuItems.map((item) => (
-                  <div key={item.id} className="glass-card rounded-xl p-4 flex items-center justify-between">
-                    <div>
+                  <div key={item.id} className="glass-card rounded-xl p-4 flex items-center gap-4">
+                    <div className="relative group flex-shrink-0">
+                      {item.image_url ? (
+                        <img src={item.image_url} alt={item.name} className="w-14 h-14 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
+                          <Image className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => { setEditingImageId(item.id); editFileInputRef.current?.click(); }}
+                        disabled={editingImageId === item.id}
+                        className="absolute inset-0 bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                      >
+                        {editingImageId === item.id ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Upload className="w-4 h-4 text-white" />}
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-body font-bold text-foreground">{item.name}</p>
                       <p className="text-xs text-muted-foreground font-body">{item.category} • Rs. {item.price}</p>
                     </div>
