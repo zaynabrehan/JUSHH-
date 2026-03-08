@@ -135,6 +135,19 @@ const Checkout = () => {
       </div>
 
       <div className="mt-6">
+        <label className="text-sm text-muted-foreground font-body mb-1.5 block">Branch *</label>
+        <Select value={branch || ""} onValueChange={(val) => setBranch(val)}>
+          <SelectTrigger className="w-full bg-secondary border border-border rounded-xl text-foreground font-body">
+            <SelectValue placeholder="Select a branch" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Johar Town">Johar Town</SelectItem>
+            <SelectItem value="DHA">DHA</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="mt-4">
         <label className="text-sm text-muted-foreground font-body mb-1.5 block">Delivery Address *</label>
         <textarea
           value={deliveryAddress}
