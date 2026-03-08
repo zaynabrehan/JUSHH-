@@ -28,9 +28,9 @@ const AppLayout = () => {
   const isBranchPage = location.pathname === "/";
 
   return (
-    <>
+    <div className="flex flex-col min-h-[100dvh] w-full overflow-x-hidden">
       <Navbar />
-      <main className="min-h-screen">
+      <main className="flex-1">
         <Routes>
           <Route path="/" element={<BranchSelection />} />
           <Route path="/home" element={<Home />} />
@@ -48,7 +48,7 @@ const AppLayout = () => {
       </main>
       {!isBranchPage && <Footer />}
       <CartPanel />
-    </>
+    </div>
   );
 };
 
