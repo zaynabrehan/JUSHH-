@@ -48,7 +48,9 @@ const Navbar = () => {
   if (!branch && location.pathname === "/") return null;
 
   const handleSignOut = async () => {
+    setShowLogoutDialog(false);
     await signOut();
+    toast.success("You have been logged out successfully!");
     navigate("/home");
   };
 
