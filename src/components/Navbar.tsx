@@ -159,7 +159,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 {user && (
-                  <button onClick={() => { handleSignOut(); setIsMobileMenuOpen(false); }} className="block py-2 text-sm font-medium text-destructive">
+                  <button onClick={() => { setShowLogoutDialog(true); setIsMobileMenuOpen(false); }} className="block py-2 text-sm font-medium text-destructive">
                     Sign Out
                   </button>
                 )}
