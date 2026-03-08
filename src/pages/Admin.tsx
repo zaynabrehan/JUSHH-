@@ -1,11 +1,15 @@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
-import { Check, Image, Loader2, MessageSquare, Package, Plus, Trash2, Upload, UtensilsCrossed } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Check, ChevronDown, ChevronRight, Clock, Image, Loader2,
+  MessageSquare, Package, Plus, RefreshCw, Trash2, Upload,
+  UtensilsCrossed, X, BarChart3, MapPin, Phone, FileText, Eye,
+} from "lucide-react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "menu" | "orders" | "messages";
+type Tab = "dashboard" | "orders" | "menu" | "messages";
 
 interface MenuItemRow {
   id: string;
@@ -23,8 +27,16 @@ interface OrderRow {
   status: string;
   total: number;
   notes: string | null;
+  delivery_address: string | null;
   created_at: string;
   user_id: string;
+}
+
+interface OrderItemRow {
+  id: string;
+  quantity: number;
+  price: number;
+  menu_items: { name: string; image_url: string | null } | null;
 }
 
 interface MessageRow {
@@ -37,15 +49,36 @@ interface MessageRow {
   created_at: string;
 }
 
+const STATUS_FLOW = ["pending", "confirmed", "preparing", "rider_picked", "delivered"];
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  preparing: "Preparing",
+  rider_picked: "On the Way",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+const STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+  confirmed: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  preparing: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  rider_picked: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  delivered: "bg-green-500/15 text-green-400 border-green-500/30",
+  cancelled: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
 const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const [tab, setTab] = useState<Tab>("orders");
+  const [tab, setTab] = useState<Tab>("dashboard");
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [orderItems, setOrderItems] = useState<Record<string, OrderItemRow[]>>({});
+  const [orderFilter, setOrderFilter] = useState<string>("all");
 
-  // New menu item form
+  // Menu form
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDesc, setFormDesc] = useState("");
@@ -58,14 +91,27 @@ const Admin = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Stats
+  const stats = useMemo(() => {
+    const today = new Date().toDateString();
+    const todayOrders = orders.filter((o) => new Date(o.created_at).toDateString() === today);
+    const pendingOrders = orders.filter((o) => o.status === "pending");
+    const activeOrders = orders.filter((o) => ["confirmed", "preparing", "rider_picked"].includes(o.status));
+    const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
+    const unreadMessages = messages.filter((m) => !m.is_read).length;
+    return { todayOrders: todayOrders.length, pendingOrders: pendingOrders.length, activeOrders: activeOrders.length, todayRevenue, unreadMessages, totalOrders: orders.length };
+  }, [orders, messages]);
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === "all") return orders;
+    return orders.filter((o) => o.status === orderFilter);
+  }, [orders, orderFilter]);
+
   const uploadImage = async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from("menu-images").upload(fileName, file);
-    if (error) {
-      toast.error("Image upload failed");
-      return null;
-    }
+    if (error) { toast.error("Image upload failed"); return null; }
     const { data: urlData } = supabase.storage.from("menu-images").getPublicUrl(fileName);
     return urlData.publicUrl;
   };
@@ -94,22 +140,50 @@ const Admin = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    if (tab === "menu") {
-      const { data } = await supabase.from("menu_items").select("*").order("category").order("name");
-      setMenuItems(data || []);
-    } else if (tab === "orders") {
-      const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      setOrders(data || []);
-    } else {
-      const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
-      setMessages(data || []);
-    }
+    const [menuRes, ordersRes, messagesRes] = await Promise.all([
+      supabase.from("menu_items").select("*").order("category").order("name"),
+      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase.from("contact_messages").select("*").order("created_at", { ascending: false }),
+    ]);
+    setMenuItems(menuRes.data || []);
+    setOrders(ordersRes.data || []);
+    setMessages(messagesRes.data || []);
     setLoading(false);
+  };
+
+  const fetchOrderItems = async (orderId: string) => {
+    if (orderItems[orderId]) return;
+    const { data } = await supabase
+      .from("order_items")
+      .select("*, menu_items(name, image_url)")
+      .eq("order_id", orderId);
+    setOrderItems((prev) => ({ ...prev, [orderId]: (data as OrderItemRow[]) || [] }));
+  };
+
+  const toggleOrderExpand = (orderId: string) => {
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null);
+    } else {
+      setExpandedOrder(orderId);
+      fetchOrderItems(orderId);
+    }
   };
 
   useEffect(() => {
     if (isAdmin) fetchData();
-  }, [tab, isAdmin]);
+  }, [isAdmin]);
+
+  // Realtime order subscription
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel("admin-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin]);
 
   if (authLoading) return <div className="container mx-auto p-10 text-center text-muted-foreground font-body">Loading...</div>;
   if (!user || !isAdmin) {
@@ -122,26 +196,19 @@ const Admin = () => {
   }
 
   const addMenuItem = async () => {
-    if (!formName || !formPrice || !formCategory) {
-      toast.error("Name, price, and category are required");
-      return;
-    }
+    if (!formName || !formPrice || !formCategory) { toast.error("Name, price, and category are required"); return; }
     setSaving(true);
     const { error } = await supabase.from("menu_items").insert({
-      name: formName.trim(),
-      description: formDesc.trim() || null,
-      price: parseFloat(formPrice),
-      category: formCategory.trim(),
+      name: formName.trim(), description: formDesc.trim() || null,
+      price: parseFloat(formPrice), category: formCategory.trim(),
       image_url: formImage.trim() || null,
     });
     setSaving(false);
-    if (error) {
-      toast.error("Failed to add item");
-    } else {
+    if (error) { toast.error("Failed to add item"); }
+    else {
       toast.success("Menu item added!");
       setFormName(""); setFormDesc(""); setFormPrice(""); setFormCategory(""); setFormImage("");
-      setShowForm(false);
-      fetchData();
+      setShowForm(false); fetchData();
     }
   };
 
@@ -155,9 +222,19 @@ const Admin = () => {
     fetchData();
   };
 
-  const updateOrderStatus = async (id: string, status: string) => {
-    await supabase.from("orders").update({ status }).eq("id", id);
-    toast.success(`Order ${status}`);
+  const advanceOrderStatus = async (order: OrderRow) => {
+    const currentIdx = STATUS_FLOW.indexOf(order.status);
+    if (currentIdx < 0 || currentIdx >= STATUS_FLOW.length - 1) return;
+    const nextStatus = STATUS_FLOW[currentIdx + 1];
+    const { error } = await supabase.from("orders").update({ status: nextStatus }).eq("id", order.id);
+    if (error) toast.error("Failed to update status");
+    else toast.success(`Order → ${STATUS_LABELS[nextStatus]}`);
+    fetchData();
+  };
+
+  const cancelOrder = async (id: string) => {
+    const { error } = await supabase.from("orders").update({ status: "cancelled" }).eq("id", id);
+    if (error) toast.error("Failed to cancel"); else toast.success("Order cancelled");
     fetchData();
   };
 
@@ -167,100 +244,317 @@ const Admin = () => {
   };
 
   const tabs = [
-    { key: "orders" as Tab, label: "Orders", icon: Package },
+    { key: "dashboard" as Tab, label: "Dashboard", icon: BarChart3 },
+    { key: "orders" as Tab, label: "Orders", icon: Package, badge: stats.pendingOrders },
     { key: "menu" as Tab, label: "Menu", icon: UtensilsCrossed },
-    { key: "messages" as Tab, label: "Messages", icon: MessageSquare },
+    { key: "messages" as Tab, label: "Messages", icon: MessageSquare, badge: stats.unreadMessages },
   ];
 
   const inputClass = "w-full bg-secondary border border-border rounded-xl px-4 py-3 text-foreground font-body placeholder:text-muted-foreground outline-none focus:border-primary focus:shadow-fire transition-all";
 
+  const getNextStatusLabel = (status: string) => {
+    const idx = STATUS_FLOW.indexOf(status);
+    if (idx < 0 || idx >= STATUS_FLOW.length - 1) return null;
+    return STATUS_LABELS[STATUS_FLOW[idx + 1]];
+  };
+
   return (
-    <div className="container mx-auto px-4 py-10">
-      <h1 className="text-4xl font-display font-bold text-foreground mb-8">
-        Admin <span className="text-gradient-fire">Panel</span>
-      </h1>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
+            Admin <span className="text-gradient-fire">Panel</span>
+          </h1>
+          <p className="text-sm text-muted-foreground font-body mt-1">Manage your restaurant</p>
+        </div>
+        <button onClick={fetchData} disabled={loading} className="p-3 rounded-xl glass text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+          <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-8">
-        {tabs.map(({ key, label, icon: Icon }) => (
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        {tabs.map(({ key, label, icon: Icon, badge }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-body font-bold text-sm transition-all ${
+            className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl font-body font-bold text-sm transition-all whitespace-nowrap ${
               tab === key ? "bg-gradient-fire text-primary-foreground shadow-fire" : "glass text-muted-foreground hover:text-foreground"
             }`}
           >
             <Icon className="w-4 h-4" /> {label}
+            {badge ? (
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center">
+                {badge}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
 
-      {loading ? (
+      {loading && orders.length === 0 ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : (
         <>
-          {/* ORDERS TAB */}
-          {tab === "orders" && (
-            <div className="space-y-4">
-              {orders.length === 0 ? (
-                <p className="text-muted-foreground font-body text-center py-10">No orders yet.</p>
-              ) : orders.map((o) => (
-                <motion.div key={o.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-body font-bold text-foreground">#{o.id.slice(0, 8)}</p>
-                    <span className="text-xs text-muted-foreground font-body">
-                      {new Date(o.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground font-body">{o.branch} • Rs. {o.total}</p>
-                  {o.notes && <p className="text-xs text-muted-foreground font-body mt-1 italic">{o.notes}</p>}
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    {["confirmed", "preparing", "delivered", "cancelled"].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => updateOrderStatus(o.id, s)}
-                        disabled={o.status === s}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold font-body capitalize transition-all ${
-                          o.status === s ? "bg-primary text-primary-foreground" : "glass text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {s}
-                      </button>
+          {/* ============ DASHBOARD ============ */}
+          {tab === "dashboard" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Today's Orders", value: stats.todayOrders, icon: Package, color: "text-blue-400" },
+                  { label: "Pending", value: stats.pendingOrders, icon: Clock, color: "text-yellow-400" },
+                  { label: "Active", value: stats.activeOrders, icon: RefreshCw, color: "text-orange-400" },
+                  { label: "Today's Revenue", value: `Rs. ${stats.todayRevenue.toLocaleString()}`, icon: BarChart3, color: "text-green-400" },
+                ].map((stat) => (
+                  <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-5">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className={`w-10 h-10 rounded-xl bg-secondary flex items-center justify-center ${stat.color}`}>
+                        <stat.icon className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground font-body mt-1">{stat.label}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Recent pending orders quick view */}
+              <div className="glass-card rounded-2xl p-6">
+                <h2 className="font-bold text-foreground font-body mb-4 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-yellow-400" /> Pending Orders
+                </h2>
+                {orders.filter((o) => o.status === "pending").length === 0 ? (
+                  <p className="text-muted-foreground font-body text-sm">No pending orders 🎉</p>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.filter((o) => o.status === "pending").slice(0, 5).map((o) => (
+                      <div key={o.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
+                        <div>
+                          <p className="font-body font-bold text-foreground text-sm">#{o.id.slice(0, 8)}</p>
+                          <p className="text-xs text-muted-foreground font-body">{o.branch} • Rs. {o.total}</p>
+                        </div>
+                        <button
+                          onClick={() => advanceOrderStatus(o)}
+                          className="px-4 py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all"
+                        >
+                          Confirm →
+                        </button>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
-              ))}
+                )}
+              </div>
+
+              {/* Unread messages */}
+              {stats.unreadMessages > 0 && (
+                <div className="glass-card rounded-2xl p-6">
+                  <h2 className="font-bold text-foreground font-body mb-2 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-primary" /> {stats.unreadMessages} Unread Message{stats.unreadMessages > 1 ? "s" : ""}
+                  </h2>
+                  <button onClick={() => setTab("messages")} className="text-sm text-primary font-body font-bold hover:underline">
+                    View Messages →
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
-          {/* MENU TAB */}
+          {/* ============ ORDERS ============ */}
+          {tab === "orders" && (
+            <div className="space-y-4">
+              {/* Filters */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {["all", ...STATUS_FLOW, "cancelled"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setOrderFilter(s)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold font-body capitalize whitespace-nowrap transition-all ${
+                      orderFilter === s
+                        ? "bg-gradient-fire text-primary-foreground shadow-fire"
+                        : "glass text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {s === "all" ? `All (${orders.length})` : `${STATUS_LABELS[s] || s} (${orders.filter((o) => o.status === s).length})`}
+                  </button>
+                ))}
+              </div>
+
+              {filteredOrders.length === 0 ? (
+                <p className="text-muted-foreground font-body text-center py-10">No orders found.</p>
+              ) : (
+                filteredOrders.map((o) => (
+                  <motion.div key={o.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-2xl overflow-hidden">
+                    {/* Order Header */}
+                    <button
+                      onClick={() => toggleOrderExpand(o.id)}
+                      className="w-full p-5 flex items-center gap-4 text-left hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <p className="font-body font-bold text-foreground">#{o.id.slice(0, 8)}</p>
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold font-body border ${STATUS_COLORS[o.status] || "glass text-muted-foreground"}`}>
+                            {STATUS_LABELS[o.status] || o.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {o.branch}</span>
+                          <span>Rs. {o.total}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(o.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {/* Next status button */}
+                        {o.status !== "delivered" && o.status !== "cancelled" && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); advanceOrderStatus(o); }}
+                            className="px-4 py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all whitespace-nowrap"
+                          >
+                            {getNextStatusLabel(o.status)} →
+                          </button>
+                        )}
+                        {expandedOrder === o.id ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                      </div>
+                    </button>
+
+                    {/* Expanded Details */}
+                    <AnimatePresence>
+                      {expandedOrder === o.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-5 pb-5 border-t border-border pt-4 space-y-4">
+                            {/* Order Items */}
+                            <div>
+                              <p className="text-xs font-bold text-muted-foreground font-body uppercase tracking-wider mb-2">Order Items</p>
+                              {orderItems[o.id] ? (
+                                <div className="space-y-2">
+                                  {orderItems[o.id].map((item) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-xl bg-secondary/50">
+                                      {item.menu_items?.image_url && (
+                                        <img src={item.menu_items.image_url} alt={item.menu_items?.name || ""} className="w-10 h-10 rounded-lg object-cover" />
+                                      )}
+                                      <div className="flex-1">
+                                        <p className="font-body text-sm font-medium text-foreground">{item.menu_items?.name}</p>
+                                        <p className="text-xs text-muted-foreground font-body">Qty: {item.quantity}</p>
+                                      </div>
+                                      <p className="font-body font-bold text-foreground text-sm">Rs. {item.price * item.quantity}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-muted-foreground text-sm font-body">
+                                  <Loader2 className="w-4 h-4 animate-spin" /> Loading items...
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Customer Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {o.delivery_address && (
+                                <div className="p-3 rounded-xl bg-secondary/50">
+                                  <p className="text-xs font-bold text-muted-foreground font-body uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" /> Delivery Address
+                                  </p>
+                                  <p className="text-sm text-foreground font-body">{o.delivery_address}</p>
+                                </div>
+                              )}
+                              {o.notes && (
+                                <div className="p-3 rounded-xl bg-secondary/50">
+                                  <p className="text-xs font-bold text-muted-foreground font-body uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <FileText className="w-3 h-3" /> Notes
+                                  </p>
+                                  <p className="text-sm text-foreground font-body italic">{o.notes}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Status Actions */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-xs font-bold text-muted-foreground font-body uppercase tracking-wider mr-2">Set Status:</p>
+                              {[...STATUS_FLOW, "cancelled"].map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => {
+                                    supabase.from("orders").update({ status: s }).eq("id", o.id).then(() => {
+                                      toast.success(`Order → ${STATUS_LABELS[s]}`);
+                                      fetchData();
+                                    });
+                                  }}
+                                  disabled={o.status === s}
+                                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold font-body capitalize transition-all border ${
+                                    o.status === s
+                                      ? STATUS_COLORS[s]
+                                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                                  }`}
+                                >
+                                  {STATUS_LABELS[s]}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Cancel */}
+                            {o.status !== "delivered" && o.status !== "cancelled" && (
+                              <button
+                                onClick={() => cancelOrder(o.id)}
+                                className="flex items-center gap-1 text-xs text-destructive font-body font-bold hover:underline"
+                              >
+                                <X className="w-3 h-3" /> Cancel Order
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* ============ MENU ============ */}
           {tab === "menu" && (
             <div>
               <button onClick={() => setShowForm(!showForm)} className="mb-6 flex items-center gap-2 bg-gradient-fire text-primary-foreground px-5 py-2.5 rounded-xl font-bold font-body hover:shadow-fire transition-all">
                 <Plus className="w-4 h-4" /> Add Menu Item
               </button>
 
-              {showForm && (
-                <div className="glass-card rounded-xl p-6 mb-6 space-y-3">
-                  <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Item name" className={inputClass} maxLength={100} />
-                  <input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Description" className={inputClass} maxLength={300} />
-                  <input value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="Price (e.g. 750)" type="number" className={inputClass} />
-                  <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Category" className={inputClass} maxLength={50} />
-                  <div className="flex items-center gap-3">
-                    <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFormImageUpload} />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-secondary text-muted-foreground font-body hover:border-primary hover:text-foreground transition-all disabled:opacity-50">
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      {uploading ? "Uploading..." : "Upload Image"}
-                    </button>
-                    {formImage && <img src={formImage} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />}
-                  </div>
-                  <button onClick={addMenuItem} disabled={saving} className="bg-gradient-fire text-primary-foreground px-6 py-2.5 rounded-xl font-bold font-body disabled:opacity-50 flex items-center gap-2">
-                    {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
-                  </button>
-                </div>
-              )}
+              <AnimatePresence>
+                {showForm && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="glass-card rounded-2xl p-6 mb-6 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Item name" className={inputClass} maxLength={100} />
+                        <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Category" className={inputClass} maxLength={50} />
+                      </div>
+                      <input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Description" className={inputClass} maxLength={300} />
+                      <input value={formPrice} onChange={(e) => setFormPrice(e.target.value)} placeholder="Price (e.g. 750)" type="number" className={inputClass} />
+                      <div className="flex items-center gap-3">
+                        <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFormImageUpload} />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border bg-secondary text-muted-foreground font-body hover:border-primary hover:text-foreground transition-all disabled:opacity-50">
+                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          {uploading ? "Uploading..." : "Upload Image"}
+                        </button>
+                        {formImage && <img src={formImage} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={addMenuItem} disabled={saving} className="bg-gradient-fire text-primary-foreground px-6 py-2.5 rounded-xl font-bold font-body disabled:opacity-50 flex items-center gap-2">
+                          {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save
+                        </button>
+                        <button onClick={() => setShowForm(false)} className="px-6 py-2.5 rounded-xl glass text-muted-foreground font-body font-bold hover:text-foreground transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <input type="file" ref={editFileInputRef} accept="image/*" className="hidden" onChange={(e) => editingImageId && handleEditImageUpload(e, editingImageId)} />
               <div className="space-y-3">
@@ -300,25 +594,31 @@ const Admin = () => {
             </div>
           )}
 
-          {/* MESSAGES TAB */}
+          {/* ============ MESSAGES ============ */}
           {tab === "messages" && (
             <div className="space-y-4">
               {messages.length === 0 ? (
                 <p className="text-muted-foreground font-body text-center py-10">No messages yet.</p>
               ) : messages.map((m) => (
-                <div key={m.id} className={`glass-card rounded-xl p-5 ${!m.is_read ? "border border-primary/30" : ""}`}>
+                <motion.div key={m.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`glass-card rounded-2xl p-5 ${!m.is_read ? "border border-primary/30" : ""}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-body font-bold text-foreground">{m.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-body font-bold text-foreground">{m.name}</p>
+                      {!m.is_read && <span className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
                     <span className="text-xs text-muted-foreground font-body">{new Date(m.created_at).toLocaleString()}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground font-body">{m.email}{m.phone && ` • ${m.phone}`}</p>
-                  <p className="text-foreground font-body mt-2">{m.message}</p>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground font-body mb-2">
+                    <span>{m.email}</span>
+                    {m.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</span>}
+                  </div>
+                  <p className="text-foreground font-body">{m.message}</p>
                   {!m.is_read && (
                     <button onClick={() => markRead(m.id)} className="mt-3 flex items-center gap-1 text-xs text-primary font-body font-bold hover:underline">
                       <Check className="w-3 h-3" /> Mark as read
                     </button>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
