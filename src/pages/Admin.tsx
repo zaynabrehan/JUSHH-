@@ -89,9 +89,8 @@ const Admin = () => {
     const pendingOrders = orders.filter((o) => o.status === "pending");
     const activeOrders = orders.filter((o) => ["confirmed", "preparing", "rider_picked"].includes(o.status));
     const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const unreadMessages = messages.filter((m) => !m.is_read).length;
-    return { todayOrders: todayOrders.length, pendingOrders: pendingOrders.length, activeOrders: activeOrders.length, todayRevenue, unreadMessages, totalOrders: orders.length };
-  }, [orders, messages]);
+    return { todayOrders: todayOrders.length, pendingOrders: pendingOrders.length, activeOrders: activeOrders.length, todayRevenue, totalOrders: orders.length };
+  }, [orders]);
 
   const filteredOrders = useMemo(() => {
     if (orderFilter === "all") return orders;
