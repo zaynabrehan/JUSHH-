@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStore } from "@/context/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Minus, Plus, X } from "lucide-react";
+import { CheckCircle, Loader2, MessageCircle, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ const Checkout = () => {
   const [notes, setNotes] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<{ orderId: string; whatsappUrl: string } | null>(null);
 
   if (!user) {
     return (
@@ -23,6 +24,46 @@ const Checkout = () => {
         <Link to="/signin" className="bg-gradient-fire text-primary-foreground px-6 py-3 rounded-xl font-bold font-body">
           Sign In
         </Link>
+      </div>
+    );
+  }
+
+  if (orderSuccess) {
+    return (
+      <div className="container mx-auto p-10 max-w-lg text-center">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <CheckCircle className="w-20 h-20 text-green-500" />
+          <h1 className="text-2xl font-display font-bold text-foreground">Order Placed Successfully! 🎉</h1>
+          <p className="text-muted-foreground font-body">Your order has been received and is being prepared.</p>
+
+          <a
+            href={orderSuccess.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors font-body mt-2"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Send Order via WhatsApp
+          </a>
+
+          <Link
+            to={`/orders/${orderSuccess.orderId}`}
+            className="w-full py-3 bg-gradient-fire text-primary-foreground font-bold rounded-xl text-center hover:shadow-fire transition-all font-body"
+          >
+            Track Your Order
+          </Link>
+
+          <Link
+            to="/menu"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body"
+          >
+            Continue Shopping
+          </Link>
+        </motion.div>
       </div>
     );
   }
@@ -46,7 +87,6 @@ const Checkout = () => {
     }
     setPlacing(true);
 
-    // Create order
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -65,7 +105,6 @@ const Checkout = () => {
       return;
     }
 
-    // Create order items
     const orderItems = cart.map((item) => ({
       order_id: order.id,
       menu_item_id: item.id,
@@ -77,21 +116,18 @@ const Checkout = () => {
 
     if (itemsError) {
       toast.error("Order placed but items failed to save.");
-    } else {
-      toast.success("Order placed successfully! 🎉");
-
-      // Send order details to WhatsApp
-      const orderText = cart
-        .map((item) => `${item.name} x${item.quantity} - Rs.${item.price * item.quantity}`)
-        .join("\n");
-      const whatsappMessage = `🛒 *New Order!*\n\n${orderText}\n\n💰 *Total: Rs.${cartTotal}*\n📍 *Branch:* ${branch}\n🏠 *Address:* ${deliveryAddress.trim()}\n📝 *Notes:* ${notes.trim() || "None"}\n\n📦 Order ID: ${order.id}`;
-      const whatsappUrl = `https://wa.me/923245531819?text=${encodeURIComponent(whatsappMessage)}`;
-      
-      clearCart();
-      // Open WhatsApp in a new tab
-      window.open(whatsappUrl, "_blank");
-      navigate("/orders");
+      setPlacing(false);
+      return;
     }
+
+    const orderText = cart
+      .map((item) => `${item.name} x${item.quantity} - Rs.${item.price * item.quantity}`)
+      .join("\n");
+    const whatsappMessage = `🛒 *New Order!*\n\n${orderText}\n\n💰 *Total: Rs.${cartTotal}*\n📍 *Branch:* ${branch}\n🏠 *Address:* ${deliveryAddress.trim()}\n📝 *Notes:* ${notes.trim() || "None"}\n\n📦 Order ID: ${order.id}`;
+    const whatsappUrl = `https://wa.me/923245531819?text=${encodeURIComponent(whatsappMessage)}`;
+
+    setOrderSuccess({ orderId: order.id, whatsappUrl });
+    clearCart();
     setPlacing(false);
   };
 
