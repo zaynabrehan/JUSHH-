@@ -9,7 +9,7 @@ import {
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "orders" | "menu" | "messages";
+type Tab = "dashboard" | "orders" | "menu";
 
 interface MenuItemRow {
   id: string;
