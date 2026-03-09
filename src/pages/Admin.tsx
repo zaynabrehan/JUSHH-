@@ -63,7 +63,7 @@ const Admin = () => {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messages, setMessages] = useState<{ id: string; is_read: boolean }[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItemRow[]>>({});
