@@ -2,14 +2,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Check, ChevronDown, ChevronRight, Clock, Image, Loader2,
-  MessageSquare, Package, Plus, RefreshCw, Trash2, Upload,
-  UtensilsCrossed, X, BarChart3, MapPin, Phone, FileText, Eye,
+  ChevronDown, ChevronRight, Clock, Image, Loader2,
+  Package, Plus, RefreshCw, Trash2, Upload,
+  UtensilsCrossed, X, BarChart3, MapPin, FileText,
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "orders" | "menu" | "messages";
+type Tab = "dashboard" | "orders" | "menu";
 
 interface MenuItemRow {
   id: string;
@@ -39,15 +39,6 @@ interface OrderItemRow {
   menu_items: { name: string; image_url: string | null } | null;
 }
 
-interface MessageRow {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
 
 const STATUS_FLOW = ["pending", "confirmed", "preparing", "rider_picked", "delivered"];
 const STATUS_LABELS: Record<string, string> = {
@@ -72,7 +63,7 @@ const Admin = () => {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItemRow[]>>({});
@@ -98,9 +89,8 @@ const Admin = () => {
     const pendingOrders = orders.filter((o) => o.status === "pending");
     const activeOrders = orders.filter((o) => ["confirmed", "preparing", "rider_picked"].includes(o.status));
     const todayRevenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const unreadMessages = messages.filter((m) => !m.is_read).length;
-    return { todayOrders: todayOrders.length, pendingOrders: pendingOrders.length, activeOrders: activeOrders.length, todayRevenue, unreadMessages, totalOrders: orders.length };
-  }, [orders, messages]);
+    return { todayOrders: todayOrders.length, pendingOrders: pendingOrders.length, activeOrders: activeOrders.length, todayRevenue, totalOrders: orders.length };
+  }, [orders]);
 
   const filteredOrders = useMemo(() => {
     if (orderFilter === "all") return orders;
@@ -140,14 +130,12 @@ const Admin = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [menuRes, ordersRes, messagesRes] = await Promise.all([
+    const [menuRes, ordersRes] = await Promise.all([
       supabase.from("menu_items").select("*").order("category").order("name"),
       supabase.from("orders").select("*").order("created_at", { ascending: false }),
-      supabase.from("contact_messages").select("*").order("created_at", { ascending: false }),
     ]);
     setMenuItems(menuRes.data || []);
     setOrders(ordersRes.data || []);
-    setMessages(messagesRes.data || []);
     setLoading(false);
   };
 
@@ -238,16 +226,10 @@ const Admin = () => {
     fetchData();
   };
 
-  const markRead = async (id: string) => {
-    await supabase.from("contact_messages").update({ is_read: true }).eq("id", id);
-    fetchData();
-  };
-
   const tabs = [
     { key: "dashboard" as Tab, label: "Dashboard", icon: BarChart3 },
     { key: "orders" as Tab, label: "Orders", icon: Package, badge: stats.pendingOrders },
     { key: "menu" as Tab, label: "Menu", icon: UtensilsCrossed },
-    { key: "messages" as Tab, label: "Messages", icon: MessageSquare, badge: stats.unreadMessages },
   ];
 
   const inputClass = "w-full bg-secondary border border-border rounded-xl px-4 py-3 text-foreground font-body placeholder:text-muted-foreground outline-none focus:border-primary focus:shadow-fire transition-all";
@@ -348,17 +330,6 @@ const Admin = () => {
                 )}
               </div>
 
-              {/* Unread messages */}
-              {stats.unreadMessages > 0 && (
-                <div className="glass-card rounded-2xl p-6">
-                  <h2 className="font-bold text-foreground font-body mb-2 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" /> {stats.unreadMessages} Unread Message{stats.unreadMessages > 1 ? "s" : ""}
-                  </h2>
-                  <button onClick={() => setTab("messages")} className="text-sm text-primary font-body font-bold hover:underline">
-                    View Messages →
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -390,27 +361,26 @@ const Admin = () => {
                     {/* Order Header */}
                     <button
                       onClick={() => toggleOrderExpand(o.id)}
-                      className="w-full p-5 flex items-center gap-4 text-left hover:bg-secondary/30 transition-colors"
+                      className="w-full p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 text-left hover:bg-secondary/30 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1.5">
-                          <p className="font-body font-bold text-foreground">#{o.id.slice(0, 8)}</p>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <p className="font-body font-bold text-foreground text-sm">#{o.id.slice(0, 8)}</p>
                           <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold font-body border ${STATUS_COLORS[o.status] || "glass text-muted-foreground"}`}>
                             {STATUS_LABELS[o.status] || o.status}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground font-body">
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {o.branch}</span>
                           <span>Rs. {o.total}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(o.created_at).toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {/* Next status button */}
+                      <div className="flex items-center gap-2 self-end sm:self-center">
                         {o.status !== "delivered" && o.status !== "cancelled" && (
                           <button
                             onClick={(e) => { e.stopPropagation(); advanceOrderStatus(o); }}
-                            className="px-4 py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all whitespace-nowrap"
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all whitespace-nowrap"
                           >
                             {getNextStatusLabel(o.status)} →
                           </button>
@@ -594,34 +564,6 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ============ MESSAGES ============ */}
-          {tab === "messages" && (
-            <div className="space-y-4">
-              {messages.length === 0 ? (
-                <p className="text-muted-foreground font-body text-center py-10">No messages yet.</p>
-              ) : messages.map((m) => (
-                <motion.div key={m.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`glass-card rounded-2xl p-5 ${!m.is_read ? "border border-primary/30" : ""}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <p className="font-body font-bold text-foreground">{m.name}</p>
-                      {!m.is_read && <span className="w-2 h-2 rounded-full bg-primary" />}
-                    </div>
-                    <span className="text-xs text-muted-foreground font-body">{new Date(m.created_at).toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground font-body mb-2">
-                    <span>{m.email}</span>
-                    {m.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {m.phone}</span>}
-                  </div>
-                  <p className="text-foreground font-body">{m.message}</p>
-                  {!m.is_read && (
-                    <button onClick={() => markRead(m.id)} className="mt-3 flex items-center gap-1 text-xs text-primary font-body font-bold hover:underline">
-                      <Check className="w-3 h-3" /> Mark as read
-                    </button>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          )}
         </>
       )}
     </div>
