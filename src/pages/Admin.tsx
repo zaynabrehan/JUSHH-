@@ -361,27 +361,26 @@ const Admin = () => {
                     {/* Order Header */}
                     <button
                       onClick={() => toggleOrderExpand(o.id)}
-                      className="w-full p-5 flex items-center gap-4 text-left hover:bg-secondary/30 transition-colors"
+                      className="w-full p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 text-left hover:bg-secondary/30 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1.5">
-                          <p className="font-body font-bold text-foreground">#{o.id.slice(0, 8)}</p>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <p className="font-body font-bold text-foreground text-sm">#{o.id.slice(0, 8)}</p>
                           <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold font-body border ${STATUS_COLORS[o.status] || "glass text-muted-foreground"}`}>
                             {STATUS_LABELS[o.status] || o.status}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground font-body">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground font-body">
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {o.branch}</span>
                           <span>Rs. {o.total}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(o.created_at).toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {/* Next status button */}
+                      <div className="flex items-center gap-2 self-end sm:self-center">
                         {o.status !== "delivered" && o.status !== "cancelled" && (
                           <button
                             onClick={(e) => { e.stopPropagation(); advanceOrderStatus(o); }}
-                            className="px-4 py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all whitespace-nowrap"
+                            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-fire text-primary-foreground text-xs font-bold font-body hover:shadow-fire transition-all whitespace-nowrap"
                           >
                             {getNextStatusLabel(o.status)} →
                           </button>
