@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -14,10 +14,9 @@ const SignIn = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (user) {
-    navigate("/home");
-    return null;
-  }
+  useEffect(() => {
+    if (user) navigate("/home");
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
