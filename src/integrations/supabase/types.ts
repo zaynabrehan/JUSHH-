@@ -130,6 +130,7 @@ export type Database = {
           estimated_delivery: string | null
           id: string
           notes: string | null
+          order_type: string
           status: string
           total: number
           updated_at: string
@@ -142,6 +143,7 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           notes?: string | null
+          order_type?: string
           status?: string
           total: number
           updated_at?: string
@@ -154,6 +156,7 @@ export type Database = {
           estimated_delivery?: string | null
           id?: string
           notes?: string | null
+          order_type?: string
           status?: string
           total?: number
           updated_at?: string
