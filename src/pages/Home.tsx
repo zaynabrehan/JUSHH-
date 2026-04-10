@@ -29,6 +29,7 @@ const Home = () => {
         .from("menu_items")
         .select("*")
         .eq("is_available", true)
+        .not("category", "in", '("Beverages","Add-ons","Jush Desserts")')
         .limit(4);
       setPopular(data || []);
       setLoading(false);
