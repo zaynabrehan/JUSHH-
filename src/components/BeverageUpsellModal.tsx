@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useStore, MenuItem } from "@/context/StoreContext";
-import { Plus, Check, Coffee, UtensilsCrossed } from "lucide-react";
+import { Plus, Check, Coffee, UtensilsCrossed, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 
 type DbMenuItem = Tables<"menu_items">;
@@ -18,6 +18,7 @@ const BeverageUpsellModal = ({ open, onClose, addedItemName }: BeverageUpsellMod
   const { addToCart } = useStore();
   const [beverages, setBeverages] = useState<DbMenuItem[]>([]);
   const [addons, setAddons] = useState<DbMenuItem[]>([]);
+  const [sauces, setSauces] = useState<DbMenuItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [allItems, setAllItems] = useState<Map<string, DbMenuItem>>(new Map());
 
@@ -30,13 +31,15 @@ const BeverageUpsellModal = ({ open, onClose, addedItemName }: BeverageUpsellMod
       const { data } = await supabase
         .from("menu_items")
         .select("*")
-        .in("category", ["Beverages", "Add-ons"])
+        .in("category", ["Beverages", "Add-ons", "Sauces"])
         .eq("is_available", true);
       if (data) {
         const bevs = data.filter((i) => i.category === "Beverages");
         const adds = data.filter((i) => i.category === "Add-ons");
+        const sauceItems = data.filter((i) => i.category === "Sauces");
         setBeverages(bevs);
         setAddons(adds);
+        setSauces(sauceItems);
         const map = new Map<string, DbMenuItem>();
         data.forEach((i) => map.set(i.id, i));
         setAllItems(map);
@@ -133,6 +136,14 @@ const BeverageUpsellModal = ({ open, onClose, addedItemName }: BeverageUpsellMod
                 <UtensilsCrossed className="w-4 h-4" /> Add-ons
               </h4>
               {renderGrid(addons)}
+            </div>
+          )}
+          {sauces.length > 0 && (
+            <div>
+              <h4 className="font-display font-bold text-sm text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Droplets className="w-4 h-4" /> Sauces
+              </h4>
+              {renderGrid(sauces)}
             </div>
           )}
         </div>
