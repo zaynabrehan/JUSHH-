@@ -5,12 +5,12 @@ import {
   ChevronDown, ChevronRight, Clock, Image, Loader2,
   Package, Plus, RefreshCw, Trash2, Upload,
   UtensilsCrossed, X, BarChart3, MapPin, FileText,
-  Truck, Store, UserPlus, Shield,
+  Truck, Store, UserPlus, Shield, Mail, Eye, EyeOff,
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "orders" | "menu" | "admins";
+type Tab = "dashboard" | "orders" | "menu" | "messages" | "admins";
 
 interface MenuItemRow {
   id: string;
@@ -277,6 +277,7 @@ const Admin = () => {
     { key: "dashboard" as Tab, label: "Dashboard", icon: BarChart3 },
     { key: "orders" as Tab, label: "Orders", icon: Package, badge: stats.pendingOrders },
     { key: "menu" as Tab, label: "Menu", icon: UtensilsCrossed },
+    { key: "messages" as Tab, label: "Messages", icon: Mail },
     { key: "admins" as Tab, label: "Admin Users", icon: Shield },
   ];
 
