@@ -5,12 +5,12 @@ import {
   ChevronDown, ChevronRight, Clock, Image, Loader2,
   Package, Plus, RefreshCw, Trash2, Upload,
   UtensilsCrossed, X, BarChart3, MapPin, FileText,
-  Truck, Store, UserPlus, Shield,
+  Truck, Store, UserPlus, Shield, Mail, Eye, EyeOff,
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "orders" | "menu" | "admins";
+type Tab = "dashboard" | "orders" | "menu" | "messages" | "admins";
 
 interface MenuItemRow {
   id: string;
@@ -277,6 +277,7 @@ const Admin = () => {
     { key: "dashboard" as Tab, label: "Dashboard", icon: BarChart3 },
     { key: "orders" as Tab, label: "Orders", icon: Package, badge: stats.pendingOrders },
     { key: "menu" as Tab, label: "Menu", icon: UtensilsCrossed },
+    { key: "messages" as Tab, label: "Messages", icon: Mail },
     { key: "admins" as Tab, label: "Admin Users", icon: Shield },
   ];
 
@@ -653,11 +654,99 @@ const Admin = () => {
             </div>
           )}
 
+          {/* ============ MESSAGES ============ */}
+          {tab === "messages" && (
+            <MessagesTab />
+          )}
+
           {/* ============ ADMIN USERS ============ */}
           {tab === "admins" && (
             <AdminUsersTab />
           )}
         </>
+      )}
+    </div>
+  );
+};
+
+// Messages tab component
+const MessagesTab = () => {
+  const [messages, setMessages] = useState<{ id: string; name: string; email: string; phone: string | null; message: string; is_read: boolean; created_at: string }[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(true);
+
+  const fetchMessages = async () => {
+    setLoadingMessages(true);
+    const { data } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
+    setMessages(data || []);
+    setLoadingMessages(false);
+  };
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const toggleRead = async (id: string, currentRead: boolean) => {
+    await supabase.from("contact_messages").update({ is_read: !currentRead }).eq("id", id);
+    fetchMessages();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-bold text-foreground font-body flex items-center gap-2">
+          <Mail className="w-4 h-4 text-primary" /> Contact Messages
+        </h2>
+        <button onClick={fetchMessages} disabled={loadingMessages} className="p-2 rounded-xl glass text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className={`w-4 h-4 ${loadingMessages ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {loadingMessages ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : messages.length === 0 ? (
+        <p className="text-muted-foreground font-body text-center py-10">No messages yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {messages.map((msg) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`glass-card rounded-2xl p-4 md:p-5 transition-all ${!msg.is_read ? "border-l-4 border-l-primary" : "opacity-75"}`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-body font-bold text-foreground">{msg.name}</p>
+                    {!msg.is_read && (
+                      <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold font-body">New</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground font-body mb-2">
+                    <span>{msg.email}</span>
+                    {msg.phone && <span>• {msg.phone}</span>}
+                    <span>• {new Date(msg.created_at).toLocaleString()}</span>
+                  </div>
+                  <p className="text-sm text-foreground font-body leading-relaxed">{msg.message}</p>
+                </div>
+                <button
+                  onClick={() => toggleRead(msg.id, msg.is_read)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold font-body transition-all whitespace-nowrap ${
+                    msg.is_read
+                      ? "glass text-muted-foreground hover:text-foreground"
+                      : "bg-primary/20 text-primary hover:bg-primary/30"
+                  }`}
+                  title={msg.is_read ? "Mark as unread" : "Mark as read"}
+                >
+                  {msg.is_read ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  {msg.is_read ? "Unread" : "Read"}
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       )}
     </div>
   );
