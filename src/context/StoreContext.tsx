@@ -45,7 +45,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, openCartAfter = true) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (existing) {
@@ -53,7 +53,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       }
       return [...prev, { ...item, quantity: 1 }];
     });
-    setIsCartOpen(true);
+    if (openCartAfter) setIsCartOpen(true);
   };
 
   const removeFromCart = (id: string) => {

@@ -11,34 +11,47 @@ interface FoodCardProps {
   item: DbMenuItem;
 }
 
-const UPSELL_CATEGORIES = [
-  "Appetizers",
-  "Pouch Shawarma",
-  "Shawarma Platter",
-  "Turkish Wraps",
-  "Turkish Doner",
-  "Shawarma",
-];
+const NON_UPSELL_CATEGORIES = ["Beverages", "Add-ons", "Sauces", "Jushhpk Desserts"];
 
 const FoodCard = ({ item }: FoodCardProps) => {
-  const { addToCart, toggleFavorite, isFavorite } = useStore();
+  const { addToCart, toggleFavorite, isFavorite, openCart } = useStore();
   const fav = isFavorite(item.id);
   const imageUrl = item.image_url || "/placeholder.svg";
   const [showBeverageModal, setShowBeverageModal] = useState(false);
 
-  const handleAdd = () => {
-    addToCart({
-      id: item.id,
-      name: item.name,
-      description: item.description || "",
-      price: item.price,
-      category: item.category,
-      image: imageUrl,
-    });
+  const isMainItem = !NON_UPSELL_CATEGORIES.includes(item.category);
 
-    if (UPSELL_CATEGORIES.includes(item.category)) {
+  const handleAdd = () => {
+    if (isMainItem) {
+      // Add to cart without opening cart panel, show upsell first
+      addToCart(
+        {
+          id: item.id,
+          name: item.name,
+          description: item.description || "",
+          price: item.price,
+          category: item.category,
+          image: imageUrl,
+        },
+        false
+      );
       setShowBeverageModal(true);
+    } else {
+      // Non-main items just add and open cart
+      addToCart({
+        id: item.id,
+        name: item.name,
+        description: item.description || "",
+        price: item.price,
+        category: item.category,
+        image: imageUrl,
+      });
     }
+  };
+
+  const handleUpsellClose = () => {
+    setShowBeverageModal(false);
+    openCart();
   };
 
   return (
@@ -79,7 +92,7 @@ const FoodCard = ({ item }: FoodCardProps) => {
 
       <BeverageUpsellModal
         open={showBeverageModal}
-        onClose={() => setShowBeverageModal(false)}
+        onClose={handleUpsellClose}
         addedItemName={item.name}
       />
     </>
