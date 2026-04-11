@@ -1,11 +1,10 @@
-import heroFoodSpread from "@/assets/homeimage.jpg";
-import restaurantInterior from "@/assets/restaurant-interior.jpg";
+import { default as heroFoodSpread, default as restaurantInterior } from "@/assets/restaurant-interior.jpg";
 import FoodCard from "@/components/FoodCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { motion, useInView } from "framer-motion";
-import { ArrowRight, Flame, Loader2, Quote, Star, Utensils, Clock, Users } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { ArrowRight, Clock, Flame, Loader2, Quote, Star, Users, Utensils } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 type MenuItem = Tables<"menu_items">;
