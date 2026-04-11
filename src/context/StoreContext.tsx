@@ -18,7 +18,7 @@ interface StoreContextType {
   setBranch: (branch: string | null) => void;
 
   cart: CartItem[];
-  addToCart: (item: MenuItem) => void;
+  addToCart: (item: MenuItem, openCartAfter?: boolean) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
   clearCart: () => void;
