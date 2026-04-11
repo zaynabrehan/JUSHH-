@@ -86,6 +86,8 @@ const Admin = () => {
   // Admin management
   const [adminEmail, setAdminEmail] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   // Stats
   const stats = useMemo(() => {
@@ -165,8 +167,20 @@ const Admin = () => {
   };
 
   useEffect(() => {
-    if (isAdmin) fetchData();
-  }, [isAdmin]);
+    if (isAdmin) {
+      fetchData();
+      // Fetch admin count and current user name
+      const fetchAdminInfo = async () => {
+        const { count } = await supabase.from("user_roles").select("*", { count: "exact", head: true }).eq("role", "admin");
+        setTotalAdmins(count || 0);
+        if (user) {
+          const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+          setCurrentUserName(profile?.full_name || user.email || null);
+        }
+      };
+      fetchAdminInfo();
+    }
+  }, [isAdmin, user]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -305,7 +319,14 @@ const Admin = () => {
           <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground">
             Admin <span className="text-gradient-fire">Panel</span>
           </h1>
-          <p className="text-sm text-muted-foreground font-body mt-1">Manage your restaurant</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-muted-foreground font-body">
+              {currentUserName ? `Welcome, ${currentUserName}` : "Manage your restaurant"}
+            </p>
+            <span className="text-xs glass px-2.5 py-1 rounded-lg font-body text-muted-foreground flex items-center gap-1">
+              <Shield className="w-3 h-3 text-primary" /> {totalAdmins} Admin{totalAdmins !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
         <button onClick={fetchData} disabled={loading} className="p-3 rounded-xl glass text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
           <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
