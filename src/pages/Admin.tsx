@@ -86,6 +86,8 @@ const Admin = () => {
   // Admin management
   const [adminEmail, setAdminEmail] = useState("");
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [totalAdmins, setTotalAdmins] = useState(0);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
 
   // Stats
   const stats = useMemo(() => {
