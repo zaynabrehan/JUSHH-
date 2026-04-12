@@ -1,11 +1,13 @@
-import { default as heroFoodSpread, default as restaurantInterior } from "@/assets/restaurant-interior.jpg";
+import { default as heroFoodSpread } from "@/assets/restaurant-interior.jpg";
 import FoodCard from "@/components/FoodCard";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { motion, useInView } from "framer-motion";
-import { ArrowRight, Clock, Flame, Loader2, Quote, Star, Users, Utensils } from "lucide-react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { ArrowRight, Clock, Flame, Loader2, Quote, Star, Users, Utensils, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 type MenuItem = Tables<"menu_items">;
 
@@ -58,9 +60,23 @@ const AnimatedCounter = ({ value, suffix = "" }: { value: string; suffix?: strin
   );
 };
 
+interface Review {
+  id: string;
+  user_name: string;
+  text: string;
+  rating: number;
+  created_at: string;
+}
+
 const Home = () => {
+  const { user } = useAuth();
   const [popular, setPopular] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     const fetchPopular = async () => {
@@ -76,11 +92,45 @@ const Home = () => {
     fetchPopular();
   }, []);
 
-  const testimonials = [
-    { name: "Ahmed R.", text: "Best shawarma in Lahore, hands down! The flavors are incredible.", rating: 5 },
-    { name: "Sara K.", text: "The Turkish doner is absolutely divine. We order every weekend!", rating: 5 },
-    { name: "Usman M.", text: "Amazing quality and fast delivery. Jushhpk never disappoints.", rating: 5 },
-  ];
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("id, user_name, text, rating, created_at")
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      setReviews(data || []);
+    };
+    fetchReviews();
+  }, []);
+
+  const submitReview = async () => {
+    if (!user) return;
+    if (!reviewText.trim()) { toast.error("Please write a review"); return; }
+    setSubmittingReview(true);
+
+    // Get user name from profile
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+    const userName = profile?.full_name || user.email || "Anonymous";
+
+    const { error } = await supabase.from("reviews").insert({
+      user_id: user.id,
+      user_name: userName,
+      text: reviewText.trim(),
+      rating: reviewRating,
+    });
+
+    setSubmittingReview(false);
+    if (error) {
+      toast.error("Failed to submit review");
+    } else {
+      toast.success("Review submitted! It will appear once approved.");
+      setReviewText("");
+      setReviewRating(5);
+      setShowReviewForm(false);
+    }
+  };
 
   return (
     <div>
@@ -175,6 +225,25 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Stats Bar */}
+      <section className="container mx-auto px-4 py-10">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
+          {[
+            { value: "10", suffix: "+", label: "Years", icon: Clock },
+            { value: "50", suffix: "+", label: "Dishes", icon: Utensils },
+            { value: "1", suffix: "M+", label: "Happy Customers", icon: Users },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center glass-card rounded-xl p-4 hover:shadow-fire transition-shadow duration-300 group">
+              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center mx-auto mb-2 group-hover:bg-gradient-fire transition-all">
+                <stat.icon className="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
+              </div>
+              <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+              <div className="text-xs text-muted-foreground font-body mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </motion.div>
+      </section>
+
       {/* Popular Picks */}
       <section className="container mx-auto px-4 py-16">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} className="flex items-end justify-between mb-10">
@@ -209,71 +278,7 @@ const Home = () => {
         )}
       </section>
 
-      {/* About Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="relative"
-          >
-            <div className="rounded-2xl overflow-hidden shadow-card group">
-              <img src={restaurantInterior} alt="Jushh Restaurant interior" className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/30 via-transparent to-transparent rounded-2xl" />
-            </div>
-            {/* Experience badge */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="absolute -right-4 top-8 glass-card rounded-2xl p-4 shadow-card hidden md:flex items-center gap-3"
-            >
-              <div className="w-10 h-10 rounded-xl bg-gradient-fire flex items-center justify-center">
-                <Clock className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="font-display font-bold text-foreground text-sm">10+ Years</p>
-                <p className="text-xs text-muted-foreground font-body">of Excellence</p>
-              </div>
-            </motion.div>
-            <div className="absolute -bottom-6 -right-6 w-32 h-32 rounded-2xl bg-gradient-fire opacity-20 blur-2xl" />
-          </motion.div>
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} className="space-y-5">
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-xs font-body text-muted-foreground">
-              Our Story
-            </motion.div>
-            <motion.h2 variants={fadeUp} custom={0} className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              A Legacy of <span className="text-gradient-fire">Flavor</span>
-            </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="text-muted-foreground font-body leading-relaxed">
-              Born in the heart of Lahore, Jushh brings together rich culinary traditions with a modern dining experience. Every dish tells a story — of spices ground fresh, recipes passed down generations.
-            </motion.p>
-            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground font-body leading-relaxed">
-              Our chefs use only the finest ingredients, sourced locally and prepared with meticulous attention to detail.
-            </motion.p>
-            <motion.div variants={fadeUp} custom={3} className="grid grid-cols-3 gap-4 pt-4">
-              {[
-                { value: "10", suffix: "+", label: "Years", icon: Clock },
-                { value: "50", suffix: "+", label: "Dishes", icon: Utensils },
-                { value: "1", suffix: "M+", label: "Happy Customers", icon: Users },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center glass-card rounded-xl p-4 hover:shadow-fire transition-shadow duration-300 group">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center mx-auto mb-2 group-hover:bg-gradient-fire transition-all">
-                    <stat.icon className="w-4 h-4 text-primary group-hover:text-primary-foreground transition-colors" />
-                  </div>
-                  <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                  <div className="text-xs text-muted-foreground font-body mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
+      {/* Reviews / Testimonials */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
         <div className="container mx-auto px-4 relative z-10">
@@ -287,43 +292,129 @@ const Home = () => {
             <motion.p variants={fadeUp} custom={1} className="text-muted-foreground font-body">Don't just take our word for it</motion.p>
           </motion.div>
 
+          {/* Review cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={scaleIn}
-                custom={i}
-                className="glass-card rounded-2xl p-6 hover-lift relative group"
-              >
-                <Quote className="w-8 h-8 text-primary/20 absolute top-4 right-4 group-hover:text-primary/40 transition-colors" />
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <motion.div
-                      key={j}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + j * 0.1 }}
-                    >
-                      <Star className="w-4 h-4 text-primary fill-primary" />
-                    </motion.div>
-                  ))}
-                </div>
-                <p className="text-foreground font-body text-sm leading-relaxed mb-4">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-fire flex items-center justify-center text-primary-foreground font-display font-bold text-xs">
-                    {t.name[0]}
+            {reviews.length === 0 ? (
+              <div className="col-span-3 text-center py-10">
+                <p className="text-muted-foreground font-body">No reviews yet. Be the first to leave one!</p>
+              </div>
+            ) : (
+              reviews.map((t, i) => (
+                <motion.div
+                  key={t.id}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={scaleIn}
+                  custom={i}
+                  className="glass-card rounded-2xl p-6 hover-lift relative group"
+                >
+                  <Quote className="w-8 h-8 text-primary/20 absolute top-4 right-4 group-hover:text-primary/40 transition-colors" />
+                  <div className="flex gap-1 mb-4">
+                    {Array.from({ length: t.rating }).map((_, j) => (
+                      <motion.div
+                        key={j}
+                        initial={{ opacity: 0, scale: 0 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.3 + j * 0.1 }}
+                      >
+                        <Star className="w-4 h-4 text-primary fill-primary" />
+                      </motion.div>
+                    ))}
                   </div>
-                  <p className="text-primary font-body font-bold text-sm">{t.name}</p>
-                </div>
-              </motion.div>
-            ))}
+                  <p className="text-foreground font-body text-sm leading-relaxed mb-4">"{t.text}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-fire flex items-center justify-center text-primary-foreground font-display font-bold text-xs">
+                      {t.user_name[0]}
+                    </div>
+                    <p className="text-primary font-body font-bold text-sm">{t.user_name}</p>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+          {/* Write a review button */}
+          <div className="text-center mt-10">
+            {user ? (
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="inline-flex items-center gap-2 bg-gradient-fire text-primary-foreground px-6 py-3 rounded-xl font-bold font-body hover:shadow-fire transition-all"
+              >
+                <Send className="w-4 h-4" /> Write a Review
+              </button>
+            ) : (
+              <Link to="/signin" className="inline-flex items-center gap-2 glass text-foreground px-6 py-3 rounded-xl font-bold font-body hover:bg-secondary transition-all">
+                Sign in to leave a review
+              </Link>
+            )}
           </div>
         </div>
       </section>
+
+      {/* Review Form Modal */}
+      <AnimatePresence>
+        {showReviewForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowReviewForm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card rounded-2xl p-6 w-full max-w-md space-y-5"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-display font-bold text-xl text-foreground">Write a Review</h3>
+                <button onClick={() => setShowReviewForm(false)} className="p-1 rounded-lg hover:bg-secondary transition-colors">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* Star rating */}
+              <div>
+                <p className="text-sm font-body text-muted-foreground mb-2">Your Rating</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star} onClick={() => setReviewRating(star)} className="transition-transform hover:scale-110">
+                      <Star className={`w-7 h-7 ${star <= reviewRating ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review text */}
+              <div>
+                <p className="text-sm font-body text-muted-foreground mb-2">Your Review</p>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Tell us about your experience..."
+                  maxLength={500}
+                  rows={4}
+                  className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-foreground font-body placeholder:text-muted-foreground outline-none focus:border-primary transition-all resize-none"
+                />
+                <p className="text-xs text-muted-foreground font-body mt-1">{reviewText.length}/500</p>
+              </div>
+
+              <button
+                onClick={submitReview}
+                disabled={submittingReview}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-fire text-primary-foreground px-6 py-3 rounded-xl font-bold font-body hover:shadow-fire transition-all disabled:opacity-50"
+              >
+                {submittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Submit Review
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CTA Banner */}
       <section className="container mx-auto px-4 pb-20">
@@ -337,7 +428,6 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent" />
           <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-accent/20 blur-3xl group-hover:bg-accent/30 transition-colors duration-700" />
           <div className="absolute bottom-0 left-1/3 w-60 h-60 rounded-full bg-orange-light/20 blur-3xl" />
-          {/* Shimmer effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-foreground/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           <div className="relative z-10 max-w-lg">
             <h3 className="text-3xl md:text-4xl font-display font-bold text-primary-foreground mb-4">
