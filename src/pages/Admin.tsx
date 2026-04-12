@@ -6,11 +6,12 @@ import {
   Package, Plus, RefreshCw, Trash2, Upload,
   UtensilsCrossed, X, BarChart3, MapPin, FileText,
   Truck, Store, UserPlus, Shield, Mail, Eye, EyeOff,
+  Star, Check, XCircle,
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 
-type Tab = "dashboard" | "orders" | "menu" | "messages" | "admins";
+type Tab = "dashboard" | "orders" | "menu" | "messages" | "reviews" | "admins";
 
 interface MenuItemRow {
   id: string;
@@ -292,6 +293,7 @@ const Admin = () => {
     { key: "orders" as Tab, label: "Orders", icon: Package, badge: stats.pendingOrders },
     { key: "menu" as Tab, label: "Menu", icon: UtensilsCrossed },
     { key: "messages" as Tab, label: "Messages", icon: Mail },
+    { key: "reviews" as Tab, label: "Reviews", icon: Star },
     { key: "admins" as Tab, label: "Admin Users", icon: Shield },
   ];
 
@@ -680,6 +682,11 @@ const Admin = () => {
             <MessagesTab />
           )}
 
+          {/* ============ REVIEWS ============ */}
+          {tab === "reviews" && (
+            <ReviewsTab />
+          )}
+
           {/* ============ ADMIN USERS ============ */}
           {tab === "admins" && (
             <AdminUsersTab />
@@ -923,6 +930,108 @@ const AdminUsersTab = () => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// Reviews management tab
+const ReviewsTab = () => {
+  const [reviews, setReviews] = useState<{ id: string; user_name: string; text: string; rating: number; is_approved: boolean; created_at: string }[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
+    setReviews(data || []);
+    setLoadingReviews(false);
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const toggleApproval = async (id: string, currentApproved: boolean) => {
+    await supabase.from("reviews").update({ is_approved: !currentApproved }).eq("id", id);
+    fetchReviews();
+    toast.success(currentApproved ? "Review hidden" : "Review approved");
+  };
+
+  const deleteReview = async (id: string) => {
+    await supabase.from("reviews").delete().eq("id", id);
+    fetchReviews();
+    toast.success("Review deleted");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-bold text-foreground font-body flex items-center gap-2">
+          <Star className="w-4 h-4 text-primary" /> Customer Reviews
+        </h2>
+        <button onClick={fetchReviews} disabled={loadingReviews} className="p-2 rounded-xl glass text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw className={`w-4 h-4 ${loadingReviews ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
+      {loadingReviews ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : reviews.length === 0 ? (
+        <p className="text-muted-foreground font-body text-center py-10">No reviews yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {reviews.map((review) => (
+            <motion.div
+              key={review.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`glass-card rounded-2xl p-4 md:p-5 transition-all ${!review.is_approved ? "border-l-4 border-l-yellow-500" : "border-l-4 border-l-green-500"}`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-body font-bold text-foreground">{review.user_name}</p>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: review.rating }).map((_, j) => (
+                        <Star key={j} className="w-3 h-3 text-primary fill-primary" />
+                      ))}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-body ${
+                      review.is_approved ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
+                    }`}>
+                      {review.is_approved ? "Approved" : "Pending"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground font-body mb-2">
+                    {new Date(review.created_at).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-foreground font-body leading-relaxed">"{review.text}"</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleApproval(review.id, review.is_approved)}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold font-body transition-all ${
+                      review.is_approved
+                        ? "glass text-yellow-400 hover:bg-yellow-500/10"
+                        : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                    }`}
+                  >
+                    {review.is_approved ? <XCircle className="w-3 h-3" /> : <Check className="w-3 h-3" />}
+                    {review.is_approved ? "Hide" : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => deleteReview(review.id)}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
