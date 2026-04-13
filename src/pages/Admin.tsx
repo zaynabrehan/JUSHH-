@@ -364,13 +364,14 @@ const Admin = () => {
           {/* ============ DASHBOARD ============ */}
           {tab === "dashboard" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
                   { label: "Today's Orders", value: stats.todayOrders, icon: Package, color: "text-blue-400" },
                   { label: "Pending", value: stats.pendingOrders, icon: Clock, color: "text-yellow-400" },
                   { label: "Active", value: stats.activeOrders, icon: RefreshCw, color: "text-orange-400" },
                   { label: "Delivery", value: stats.deliveryOrders, icon: Truck, color: "text-purple-400" },
                   { label: "Pickup", value: stats.pickupOrders, icon: Store, color: "text-green-400" },
+                  { label: "Total Admins", value: totalAdmins, icon: Shield, color: "text-primary" },
                 ].map((stat) => (
                   <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-5">
                     <div className="flex items-center gap-3 mb-2">
