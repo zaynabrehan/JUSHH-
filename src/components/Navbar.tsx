@@ -2,7 +2,7 @@ import jushhLogo from "@/assets/jushh-logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useStore } from "@/context/StoreContext";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, Heart, LogOut, MapPin, Menu, Phone, ShoppingCart, User, X } from "lucide-react";
+import { Clock, Heart, LogOut, MapPin, Menu, Phone, Search, ShoppingCart, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -25,8 +25,16 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchValue.trim();
+    navigate(q ? `/menu?q=${encodeURIComponent(q)}` : "/menu");
+    setIsMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -99,6 +107,18 @@ const Navbar = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* Global Search */}
+            <form onSubmit={submitSearch} className="hidden md:flex items-center glass rounded-lg pl-3 pr-1 py-1 focus-within:shadow-fire transition-all">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="Search dishes..."
+                className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-36 lg:w-48 px-2 font-body"
+              />
+            </form>
+
             {branch && (
               <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground glass px-2.5 py-1.5 rounded-lg">
                 <MapPin className="w-3 h-3 text-primary" /> {branch}
@@ -142,6 +162,16 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="md:hidden border-t border-border bg-background overflow-hidden">
               <div className="container mx-auto px-4 py-4 space-y-3">
+                <form onSubmit={submitSearch} className="flex items-center glass rounded-lg px-3 py-2">
+                  <Search className="w-4 h-4 text-muted-foreground mr-2" />
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    placeholder="Search dishes..."
+                    className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-full font-body"
+                  />
+                </form>
                 {navLinks.map((link) => (
                   <Link key={link.to} to={link.to} onClick={() => setIsMobileMenuOpen(false)} className={`block py-2 text-sm font-medium transition-colors ${isActive(link.to) ? "text-primary" : "text-muted-foreground"}`}>
                     {link.label}

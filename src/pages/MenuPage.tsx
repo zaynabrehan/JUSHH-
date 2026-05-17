@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Loader2, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import FoodCard from "@/components/FoodCard";
@@ -39,11 +40,26 @@ const itemVariant = {
 };
 
 const MenuPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(true);
+
+  // Sync search query with URL param (so navbar search drives this page)
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    setSearchQuery(q);
+  }, [searchParams]);
+
+  const updateSearch = (value: string) => {
+    setSearchQuery(value);
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set("q", value);
+    else next.delete("q");
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     const fetchMenu = async () => {
@@ -127,7 +143,7 @@ const MenuPage = () => {
             type="text"
             placeholder="Search dishes..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => updateSearch(e.target.value)}
             className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none w-full font-body"
           />
         </div>

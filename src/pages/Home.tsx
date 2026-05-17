@@ -42,6 +42,7 @@ interface Review {
   text: string;
   rating: number;
   created_at: string;
+  _pending?: boolean;
 }
 
 const Home = () => {
@@ -87,25 +88,37 @@ const Home = () => {
   }, []);
 
   const submitReview = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to leave a review");
+      return;
+    }
     if (!reviewText.trim()) { toast.error("Please write a review"); return; }
     setSubmittingReview(true);
 
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
-    const userName = profile?.full_name || user.email || "Anonymous";
+    const userName = profile?.full_name || user.email?.split("@")[0] || "Anonymous";
 
-    const { error } = await supabase.from("reviews").insert({
-      user_id: user.id,
-      user_name: userName,
-      text: reviewText.trim(),
-      rating: reviewRating,
-    });
+    const { data: inserted, error } = await supabase
+      .from("reviews")
+      .insert({
+        user_id: user.id,
+        user_name: userName,
+        text: reviewText.trim(),
+        rating: reviewRating,
+      })
+      .select("id, user_name, text, rating, created_at")
+      .single();
 
     setSubmittingReview(false);
     if (error) {
-      toast.error("Failed to submit review");
+      console.error("Review submit error:", error);
+      toast.error(error.message || "Failed to submit review. Please try again.");
     } else {
-      toast.success("Review submitted! It will appear once approved.");
+      toast.success("Review submitted! It will appear publicly once approved by our team.", { duration: 5000 });
+      // Show the user their own review immediately (pending approval) at the top
+      if (inserted) {
+        setReviews((prev) => [{ ...inserted, _pending: true } as Review & { _pending?: boolean }, ...prev]);
+      }
       setReviewText("");
       setReviewRating(5);
       setShowReviewForm(false);
@@ -309,6 +322,11 @@ const Home = () => {
                   whileHover={{ y: -6, transition: { type: "spring", stiffness: 300 } }}
                   className="glass-card rounded-2xl p-6 relative group cursor-default gradient-border-animated"
                 >
+                  {t._pending && (
+                    <div className="absolute top-3 left-3 bg-primary/20 text-primary text-xs font-body font-bold px-2 py-1 rounded-full border border-primary/40">
+                      Pending approval
+                    </div>
+                  )}
                   <Quote className="w-8 h-8 text-primary/20 absolute top-4 right-4 group-hover:text-primary/40 transition-colors duration-500" />
                   <div className="flex gap-1 mb-4">
                     {Array.from({ length: t.rating }).map((_, j) => (
