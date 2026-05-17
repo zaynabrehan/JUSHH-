@@ -42,6 +42,7 @@ interface Review {
   text: string;
   rating: number;
   created_at: string;
+  _pending?: boolean;
 }
 
 const Home = () => {
