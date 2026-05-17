@@ -322,6 +322,11 @@ const Home = () => {
                   whileHover={{ y: -6, transition: { type: "spring", stiffness: 300 } }}
                   className="glass-card rounded-2xl p-6 relative group cursor-default gradient-border-animated"
                 >
+                  {t._pending && (
+                    <div className="absolute top-3 left-3 bg-primary/20 text-primary text-xs font-body font-bold px-2 py-1 rounded-full border border-primary/40">
+                      Pending approval
+                    </div>
+                  )}
                   <Quote className="w-8 h-8 text-primary/20 absolute top-4 right-4 group-hover:text-primary/40 transition-colors duration-500" />
                   <div className="flex gap-1 mb-4">
                     {Array.from({ length: t.rating }).map((_, j) => (
