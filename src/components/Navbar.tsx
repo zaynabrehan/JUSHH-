@@ -162,6 +162,16 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="md:hidden border-t border-border bg-background overflow-hidden">
               <div className="container mx-auto px-4 py-4 space-y-3">
+                <form onSubmit={submitSearch} className="flex items-center glass rounded-lg px-3 py-2">
+                  <Search className="w-4 h-4 text-muted-foreground mr-2" />
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    placeholder="Search dishes..."
+                    className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-full font-body"
+                  />
+                </form>
                 {navLinks.map((link) => (
                   <Link key={link.to} to={link.to} onClick={() => setIsMobileMenuOpen(false)} className={`block py-2 text-sm font-medium transition-colors ${isActive(link.to) ? "text-primary" : "text-muted-foreground"}`}>
                     {link.label}
