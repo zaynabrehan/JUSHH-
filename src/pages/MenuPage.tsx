@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Loader2, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import FoodCard from "@/components/FoodCard";
