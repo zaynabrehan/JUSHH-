@@ -87,25 +87,37 @@ const Home = () => {
   }, []);
 
   const submitReview = async () => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please sign in to leave a review");
+      return;
+    }
     if (!reviewText.trim()) { toast.error("Please write a review"); return; }
     setSubmittingReview(true);
 
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
-    const userName = profile?.full_name || user.email || "Anonymous";
+    const userName = profile?.full_name || user.email?.split("@")[0] || "Anonymous";
 
-    const { error } = await supabase.from("reviews").insert({
-      user_id: user.id,
-      user_name: userName,
-      text: reviewText.trim(),
-      rating: reviewRating,
-    });
+    const { data: inserted, error } = await supabase
+      .from("reviews")
+      .insert({
+        user_id: user.id,
+        user_name: userName,
+        text: reviewText.trim(),
+        rating: reviewRating,
+      })
+      .select("id, user_name, text, rating, created_at")
+      .single();
 
     setSubmittingReview(false);
     if (error) {
-      toast.error("Failed to submit review");
+      console.error("Review submit error:", error);
+      toast.error(error.message || "Failed to submit review. Please try again.");
     } else {
-      toast.success("Review submitted! It will appear once approved.");
+      toast.success("Review submitted! It will appear publicly once approved by our team.", { duration: 5000 });
+      // Show the user their own review immediately (pending approval) at the top
+      if (inserted) {
+        setReviews((prev) => [{ ...inserted, _pending: true } as Review & { _pending?: boolean }, ...prev]);
+      }
       setReviewText("");
       setReviewRating(5);
       setShowReviewForm(false);
