@@ -25,8 +25,16 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchValue.trim();
+    navigate(q ? `/menu?q=${encodeURIComponent(q)}` : "/menu");
+    setIsMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
