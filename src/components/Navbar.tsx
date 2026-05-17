@@ -107,6 +107,18 @@ const Navbar = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* Global Search */}
+            <form onSubmit={submitSearch} className="hidden md:flex items-center glass rounded-lg pl-3 pr-1 py-1 focus-within:shadow-fire transition-all">
+              <Search className="w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="Search dishes..."
+                className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-36 lg:w-48 px-2 font-body"
+              />
+            </form>
+
             {branch && (
               <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground glass px-2.5 py-1.5 rounded-lg">
                 <MapPin className="w-3 h-3 text-primary" /> {branch}
