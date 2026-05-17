@@ -143,7 +143,7 @@ const MenuPage = () => {
             type="text"
             placeholder="Search dishes..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => updateSearch(e.target.value)}
             className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none w-full font-body"
           />
         </div>
